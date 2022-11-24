@@ -20,7 +20,8 @@ class NewGame:
     def end():
         quit()
 
-    # Start game loop - todo
+    # Start game loop
+    # TODO : currently used for testing, last thing to complete?
     def game_loop(self):
 
         # tests below
@@ -33,11 +34,12 @@ class NewGame:
             placed_block = self.place_block(gen_block, user_input)
             self.update_matrix(placed_block)
 
-    # Reset game variables - todo
+    # Reset game variables
+    # TODO : add function for resting the game
     def game_reset(self):
         pass
 
-    # Scoring manager
+    # Function for adding to total score
     def add_to_score(self, to_add):
         self.score += to_add
 
@@ -52,7 +54,7 @@ class NewGame:
 
     # Generating new empty playing field
     def gen_empty_field(self):
-        for row in range(self.rows_number):
+        for _ in range(self.rows_number):
             self.field_matrix.append([0 for _ in range(self.cols_number)])
 
     # Generating a block from available options
@@ -150,6 +152,7 @@ class NewGame:
             self.add_to_score(len(linked_blocks) * block_value)
 
     # Adding gravity to column blocks
+    # TODO : add gravity columns which can be triggered
     def update_column(self, col):
         pass
 
@@ -161,8 +164,8 @@ class NewGame:
     def get_block_value(self, block):
         return self.field_matrix[block[0]][block[1]]
 
-    # Get connected set of blocks with same value as origin - redo
-    # TODO
+    # Get connected set of blocks with same value as origin
+    # TODO : remove return? there is issue with branching
     def connected_blocks(self, ori_block, seen):
         seen.add(ori_block)
         next_to = self.get_adjacent_same(ori_block, self.get_block_value(ori_block))
