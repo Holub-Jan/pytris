@@ -35,7 +35,7 @@ class NewGame:
             self.update_matrix(placed_block)
 
     # Reset game variables
-    # TODO : add function for resting the game
+    # TODO : add function for resetting the game
     def game_reset(self):
         pass
 
@@ -154,6 +154,7 @@ class NewGame:
     # Adding gravity to column blocks
     # TODO : add gravity columns which can be triggered
     def update_column(self, col):
+
         pass
 
     # For changing values of blocks
@@ -165,7 +166,6 @@ class NewGame:
         return self.field_matrix[block[0]][block[1]]
 
     # Get connected set of blocks with same value as origin
-    # TODO : remove return? there is issue with branching
     def connected_blocks(self, ori_block, seen):
         seen.add(ori_block)
         next_to = self.get_adjacent_same(ori_block, self.get_block_value(ori_block))
@@ -173,7 +173,7 @@ class NewGame:
         for pos in next_to:
             if pos not in seen:
                 ori_block = pos
-                return self.connected_blocks(ori_block, seen)
+                self.connected_blocks(ori_block, seen)
 
         return seen
 
