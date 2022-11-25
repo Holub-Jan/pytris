@@ -33,6 +33,7 @@ class NewGame:
             user_input = self.get_user_input()
             placed_block = self.place_block(gen_block, user_input)
             self.update_matrix(placed_block)
+            print(self.field_matrix)
 
     # Reset game variables
     # TODO : add function for resetting the game
@@ -134,7 +135,15 @@ class NewGame:
                         return (self.rows_number - 1) - row, col
 
     # Update matrix after choice is made
+    # TODO : have to add updating until blocks stop combining
+    # TODO : if gravity drops block into a linked list again, have to update
+    # TODO : place block > check for linked objects created > update > loop until it settle
     def update_matrix(self, check_block):
+
+        # matrix_difference = True
+
+        # while matrix_difference:
+
 
         block_value = self.get_block_value(check_block)
         linked_blocks = self.connected_blocks(check_block, set())
@@ -147,6 +156,7 @@ class NewGame:
                 self.change_block_value(block, 0)
 
             for col in cols_to_update:
+                print(col)
                 self.update_column(col)
 
             self.add_to_score(len(linked_blocks) * block_value)
@@ -154,8 +164,31 @@ class NewGame:
     # Adding gravity to column blocks
     # TODO : add gravity columns which can be triggered
     def update_column(self, col):
+        col_values = list()
+        col_cords = list()
 
-        pass
+        for row in range(self.rows_number):
+            col_values.append(self.field_matrix[row][col])
+            col_cords.append((row, col))
+
+        print(col_values,'max',max(col_values))
+
+        if max(col_values) == 0:
+            return
+
+        to_pop = [index for index in range(len(col_values)) if col_values[index] == 0]
+
+        for index in reversed(to_pop):
+            col_cords.append(col_cords[index])
+            col_values.append(0)
+
+            col_values.pop(index)
+            col_cords.pop(index)
+        print(col_cords, col_values)
+
+        for index, pos in enumerate(col_cords):
+            print(col_values[index], pos)
+            self.field_matrix[(self.rows_number - 1) - index][pos[1]] = col_values[index]
 
     # For changing values of blocks
     def change_block_value(self, pos, value):
