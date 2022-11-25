@@ -1,4 +1,4 @@
-class NewGame:
+class Game:
 
     def __init__(self, rows_number, cols_number, max_score):
 
@@ -8,62 +8,95 @@ class NewGame:
         self.max_score = max_score
 
         self.field_matrix = list()
-        self.score = 0
+        self.next_block = 0
 
         self.available_block_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         self.column_names = ['q', 'w', 'e', 'r', 't']
-        # Symmetric number of walls for row and column ( border size * 2 )
-        self.border_num = 2
+
+    # For changing values of blocks
+    def change_block_value(self, pos, value):
+        self.field_matrix[pos[0]][pos[1]] = value
+
+    # Return block value based on position
+    def get_block_value(self, block):
+        return self.field_matrix[block[0]][block[1]]
 
     # Close program
     @staticmethod
     def end():
         quit()
 
-    # Start game loop
-    # TODO : currently used for testing, last thing to complete?
-    def game_loop(self):
 
-        # tests below
-        game.gen_empty_field()
+class UiManager(Game):
+    def __init__(self, rows_number, cols_number, max_score):
+        super().__init__(rows_number, cols_number, max_score)
 
-        while True:
-            gen_block = self.gen_rand_block()
-            self.display_manager(gen_block)
-            user_input = self.get_user_input()
-            placed_block = self.place_block(gen_block, user_input)
-            self.update_matrix(placed_block)
-            print(self.field_matrix)
+        self.score = 0
+        self.border_num = 2
 
-    # Reset game variables
-    # TODO : add function for resetting the game
-    def game_reset(self):
-        pass
+    # For managing displaying required parts
+    def display_manager(self):
+
+        self.display_col_options()
+        self.display_field_matrix()
+
+        self.display_score_bar()
 
     # Function for adding to total score
     def add_to_score(self, to_add):
         self.score += to_add
 
-    # For managing displaying required parts
+    # Displaying column options for better visibility
+    def display_col_options(self):
+        for col in range(self.cols_number + self.border_num):
+            if col not in [0, self.cols_number + (self.border_num / 2)]:
+                print(self.column_names[col - 1], end=' ')
+            else:
+                print(' ', end=' ')
+        print()
+
+    # Displaying field matrix with borders
+    def display_field_matrix(self):
+        for row in range(self.rows_number + self.border_num):
+            for col in range(self.cols_number + self.border_num):
+                block_value = self.border_display(row, col)
+                self.field_display(block_value)
+            print()
+
+    # Border logic displaying
+    def border_display(self, row, col):
+        block_value = -1
+        # Displaying borders on left, right and bottom
+        if col in [0, self.cols_number + (self.border_num / 2)] or row == self.rows_number + (
+                self.border_num / 2):
+            print('@', end=' ')
+        elif row == 0:
+            print(' ', end=' ')
+        else:
+            block_value = self.field_matrix[row - int(self.border_num / 2)][col - int(self.border_num / 2)]
+
+        return block_value
+
+    # Field logic displaying
     @staticmethod
-    def display_manager(new_block):
+    def field_display(block_value):
+        # Zero value means empty space, so we display nothing
+        if block_value != -1:
+            if block_value == 0:
+                print(' ', end=' ')
+            # Displaying the rest of the values
+            else:
+                print(block_value, end=' ')
 
-        game.display_col_options()
-        game.display_field_matrix()
+    # Display score bar
+    def display_score_bar(self):
+        print(f'Score: {self.score}')
+        print(f'Next piece: {self.next_block}')
 
-        game.display_score_bar(new_block)
 
-    # Generating new empty playing field
-    def gen_empty_field(self):
-        for _ in range(self.rows_number):
-            self.field_matrix.append([0 for _ in range(self.cols_number)])
-
-    # Generating a block from available options
-    def gen_rand_block(self):
-        import random
-        rand_block = random.choice(self.available_block_list)
-
-        return rand_block
+class Controller(Game):
+    def __init__(self, rows_number, cols_number, max_score):
+        super().__init__(rows_number, cols_number, max_score)
 
     # Getting users choice of column addition
     def get_user_input(self):
@@ -82,45 +115,40 @@ class NewGame:
 
         return user_input
 
-    # Displaying column options for better visibility
-    def display_col_options(self):
-        for col in range(self.cols_number + self.border_num):
-            if col not in [0, self.cols_number + (self.border_num / 2)]:
-                print(self.column_names[col - 1], end=' ')
-            else:
-                print(' ', end=' ')
-        print()
 
-    # Displaying field matrix with borders
-    def display_field_matrix(self):
-        for row in range(self.rows_number + self.border_num):
-            for col in range(self.cols_number + self.border_num):
-                block_value = -1
-                # Displaying borders on left, right and bottom
-                if col in [0, self.cols_number + (self.border_num / 2)] or row == self.rows_number + (
-                        self.border_num / 2):
-                    print('@', end=' ')
-                elif row == 0:
-                    print(' ', end=' ')
-                else:
-                    block_value = self.field_matrix[row - int(self.border_num / 2)][col - int(self.border_num / 2)]
-                # Zero value means empty space, so we display nothing
-                if block_value != -1:
-                    if block_value == 0:
-                        # print(str(block_value), end='')
-                        print(' ', end=' ')
-                    # Displaying the rest of the values
-                    else:
-                        # print(str(block_value), end='')
-                        print(block_value, end=' ')
-            print()
+class Logic(UiManager, Controller):
+    def __init__(self, rows_number, cols_number, max_score):
+        super().__init__(rows_number, cols_number, max_score)
 
-    # Display score bar
-    def display_score_bar(self, next_piece):
-        # Score: XXX
-        # Next piece: X
-        print(f'Score: {self.score}')
-        print(f'Next piece: {next_piece}')
+    # Start game loop
+    def game_loop(self):
+        import os
+
+        # tests below
+        game.gen_empty_field()
+
+        while True:
+            os.system('cls')
+            gen_block = self.gen_rand_block()
+            self.next_block = gen_block
+
+            self.display_manager()
+
+            user_input = self.get_user_input()
+            placed_block = self.place_block(gen_block, user_input)
+            self.update_matrix(placed_block)
+
+    # Generating new empty playing field
+    def gen_empty_field(self):
+        for _ in range(self.rows_number):
+            self.field_matrix.append([0 for _ in range(self.cols_number)])
+
+    # Generating a block from available options
+    def gen_rand_block(self):
+        import random
+        rand_block = random.choice(self.available_block_list)
+
+        return rand_block
 
     # Place a block the lowest possible spot in selected column
     def place_block(self, block, column):
@@ -135,16 +163,8 @@ class NewGame:
                         return (self.rows_number - 1) - row, col
 
     # Update matrix after choice is made
-    # TODO : have to add updating until blocks stop combining
-    # TODO : if gravity drops block into a linked list again, have to update
-    # TODO : place block > check for linked objects created > update > loop until it settle
+    # TODO : update for each moved block
     def update_matrix(self, check_block):
-
-        # matrix_difference = True
-
-        # while matrix_difference:
-
-
         block_value = self.get_block_value(check_block)
         linked_blocks = self.connected_blocks(check_block, set())
 
@@ -156,13 +176,11 @@ class NewGame:
                 self.change_block_value(block, 0)
 
             for col in cols_to_update:
-                print(col)
                 self.update_column(col)
 
             self.add_to_score(len(linked_blocks) * block_value)
 
     # Adding gravity to column blocks
-    # TODO : add gravity columns which can be triggered
     def update_column(self, col):
         col_values = list()
         col_cords = list()
@@ -170,8 +188,6 @@ class NewGame:
         for row in range(self.rows_number):
             col_values.append(self.field_matrix[row][col])
             col_cords.append((row, col))
-
-        print(col_values,'max',max(col_values))
 
         if max(col_values) == 0:
             return
@@ -184,19 +200,9 @@ class NewGame:
 
             col_values.pop(index)
             col_cords.pop(index)
-        print(col_cords, col_values)
 
         for index, pos in enumerate(col_cords):
-            print(col_values[index], pos)
             self.field_matrix[(self.rows_number - 1) - index][pos[1]] = col_values[index]
-
-    # For changing values of blocks
-    def change_block_value(self, pos, value):
-        self.field_matrix[pos[0]][pos[1]] = value
-
-    # Return block value based on position
-    def get_block_value(self, block):
-        return self.field_matrix[block[0]][block[1]]
 
     # Get connected set of blocks with same value as origin
     def connected_blocks(self, ori_block, seen):
@@ -242,5 +248,5 @@ number_of_rows = 10
 number_of_columns = 5
 score_to_win = 100
 
-game = NewGame(number_of_rows, number_of_columns, score_to_win)
+game = Logic(number_of_rows, number_of_columns, score_to_win)
 game.game_loop()
