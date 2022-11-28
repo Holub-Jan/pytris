@@ -33,7 +33,7 @@ class Game:
 
             user_input = self.controller.get_user_input()
             placed_block = self.logic.place_block(gen_block, user_input)
-            self.logic.update_matrix(placed_block)
+            self.logic.update_matrix([placed_block])
 
     # For changing values of blocks
     def change_block_value(self, pos, value):
@@ -151,8 +151,6 @@ class Logic:
         self.get_block_value = get_block_value
         self.change_block_value = change_block_value
 
-        self.moved_blocks = set()
-
     # Generating new empty playing field
     def gen_empty_field(self):
         for _ in range(self.rows_number):
@@ -182,41 +180,44 @@ class Logic:
                         return (self.rows_number - 1) - row, col
 
     # Update matrix after choice is made
-    # TODO : update gravity
-    def update_matrix(self, check_block):
-        block_value = self.get_block_value(check_block)
-        linked_blocks = self.connected_blocks(check_block, set())
+    def update_matrix(self, blocks_to_check):
+        cols_to_update = set()
 
-        if len(linked_blocks) > 2:
-            cols_to_update = set()
-            self.moved_blocks = set()
+        for check_block in blocks_to_check:
+            block_value = self.get_block_value(check_block)
+            linked_blocks = self.connected_blocks(check_block, set())
 
-            for block in linked_blocks:
-                cols_to_update.add(block[1])
-                self.change_block_value(block, 0)
+            if len(linked_blocks) > 2:
 
-            for col in cols_to_update:
-                self.update_column(col)
+                for block in linked_blocks:
+                    cols_to_update.add(block[1])
+                    self.change_block_value(block, 0)
 
-            self.add_to_score(len(linked_blocks) * block_value)
+                self.add_to_score(len(linked_blocks) * block_value)
+
+        for col in cols_to_update:
+            self.update_column(col)
 
     # Adding gravity to column blocks
-    # TODO : Update gravity, not working at all, also add check if other are connected
     def update_column(self, col):
         col_values = [self.field_matrix[row][col] for row in range(self.rows_number)]
 
         if max(col_values) == 0:
             return
 
+        to_check = list()
         to_pop = [col_values[index] for index in range(len(col_values)) if col_values[index] != 0]
 
         row_idx = self.rows_number
         for i in reversed(range(len(to_pop))):
             row_idx -= 1
             self.field_matrix[row_idx][col] = to_pop[i]
+            to_check.append((row_idx, col))
 
         for i in range(row_idx):
             self.field_matrix[i][col] = 0
+
+        self.update_matrix(to_check)
 
     # Get connected set of blocks with same value as origin
     def connected_blocks(self, ori_block, seen):
