@@ -1,5 +1,4 @@
 class Game:
-
     def __init__(self, rows_number, cols_number, max_score):
 
         # Flexible variables for changing the size and length of the game
@@ -8,10 +7,33 @@ class Game:
         self.max_score = max_score
 
         self.field_matrix = list()
-        self.next_block = 0
 
         self.available_block_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         self.column_names = ['q', 'w', 'e', 'r', 't']
+        self.score = 0
+
+        self.logic = Logic(self.rows_number, self.cols_number, self.field_matrix, self.available_block_list,
+                           self.column_names, self.score, self.get_block_value, self.change_block_value)
+        self.ui_manager = UiManager(cols_number, rows_number, self.column_names, self.field_matrix, self.score)
+        self.controller = Controller(self.column_names, self.end)
+
+    # Start game loop
+    def game_loop(self):
+        import os
+
+        # tests below
+        self.logic.gen_empty_field()
+
+        while True:
+            os.system('cls')
+            gen_block = self.logic.gen_rand_block()
+            self.ui_manager.next_block = gen_block
+
+            self.ui_manager.display_manager()
+
+            user_input = self.controller.get_user_input()
+            placed_block = self.logic.place_block(gen_block, user_input)
+            self.logic.update_matrix(placed_block)
 
     # For changing values of blocks
     def change_block_value(self, pos, value):
@@ -27,11 +49,15 @@ class Game:
         quit()
 
 
-class UiManager(Game):
-    def __init__(self, rows_number, cols_number, max_score):
-        super().__init__(rows_number, cols_number, max_score)
+class UiManager:
+    def __init__(self, cols_num, rows_num, col_names, field_matrix, score):
+        self.cols_number = cols_num
+        self.rows_number = rows_num
+        self.column_names = col_names
+        self.field_matrix = field_matrix
+        self.score = score
 
-        self.score = 0
+        self.next_block = 0
         self.border_num = 2
 
     # For managing displaying required parts
@@ -41,10 +67,6 @@ class UiManager(Game):
         self.display_field_matrix()
 
         self.display_score_bar()
-
-    # Function for adding to total score
-    def add_to_score(self, to_add):
-        self.score += to_add
 
     # Displaying column options for better visibility
     def display_col_options(self):
@@ -94,9 +116,10 @@ class UiManager(Game):
         print(f'Next piece: {self.next_block}')
 
 
-class Controller(Game):
-    def __init__(self, rows_number, cols_number, max_score):
-        super().__init__(rows_number, cols_number, max_score)
+class Controller:
+    def __init__(self, expected_input, end_opt):
+        self.expected_input = expected_input
+        self.end_opt = end_opt
 
     # Getting users choice of column addition
     def get_user_input(self):
@@ -105,38 +128,30 @@ class Controller(Game):
 
         # Checking if user chose a viable option
         # If not, display available options and ask again until viable option is selected
-        while user_input not in self.column_names:
+        while user_input not in self.expected_input:
             if user_input == 'exit':
-                self.end()
+                self.end_opt()
             else:
                 print('\nSelected column is not available\nPlease select one of the following options: ',
-                      ', '.join(f'{opt}' for opt in self.column_names))
+                      ', '.join(f'{opt}' for opt in self.expected_input))
                 user_input = input('Choose a column to add the piece: ')
 
         return user_input
 
 
-class Logic(UiManager, Controller):
-    def __init__(self, rows_number, cols_number, max_score):
-        super().__init__(rows_number, cols_number, max_score)
+class Logic:
+    def __init__(self, rows_num, cols_num, field_matrix, block_list, col_names, score, get_block_value,
+                 change_block_value):
+        self.rows_number = rows_num
+        self.cols_number = cols_num
+        self.field_matrix = field_matrix
+        self.available_block_list = block_list
+        self.column_names = col_names
+        self.score = score
+        self.get_block_value = get_block_value
+        self.change_block_value = change_block_value
 
-    # Start game loop
-    def game_loop(self):
-        import os
-
-        # tests below
-        game.gen_empty_field()
-
-        while True:
-            os.system('cls')
-            gen_block = self.gen_rand_block()
-            self.next_block = gen_block
-
-            self.display_manager()
-
-            user_input = self.get_user_input()
-            placed_block = self.place_block(gen_block, user_input)
-            self.update_matrix(placed_block)
+        self.moved_blocks = set()
 
     # Generating new empty playing field
     def gen_empty_field(self):
@@ -149,6 +164,10 @@ class Logic(UiManager, Controller):
         rand_block = random.choice(self.available_block_list)
 
         return rand_block
+
+    # Function for adding to total score
+    def add_to_score(self, to_add):
+        self.score += to_add
 
     # Place a block the lowest possible spot in selected column
     def place_block(self, block, column):
@@ -163,13 +182,14 @@ class Logic(UiManager, Controller):
                         return (self.rows_number - 1) - row, col
 
     # Update matrix after choice is made
-    # TODO : update for each moved block
+    # TODO : update gravity
     def update_matrix(self, check_block):
         block_value = self.get_block_value(check_block)
         linked_blocks = self.connected_blocks(check_block, set())
 
         if len(linked_blocks) > 2:
             cols_to_update = set()
+            self.moved_blocks = set()
 
             for block in linked_blocks:
                 cols_to_update.add(block[1])
@@ -181,28 +201,22 @@ class Logic(UiManager, Controller):
             self.add_to_score(len(linked_blocks) * block_value)
 
     # Adding gravity to column blocks
+    # TODO : Update gravity, not working at all, also add check if other are connected
     def update_column(self, col):
-        col_values = list()
-        col_cords = list()
-
-        for row in range(self.rows_number):
-            col_values.append(self.field_matrix[row][col])
-            col_cords.append((row, col))
+        col_values = [self.field_matrix[row][col] for row in range(self.rows_number)]
 
         if max(col_values) == 0:
             return
 
-        to_pop = [index for index in range(len(col_values)) if col_values[index] == 0]
+        to_pop = [col_values[index] for index in range(len(col_values)) if col_values[index] != 0]
 
-        for index in reversed(to_pop):
-            col_cords.append(col_cords[index])
-            col_values.append(0)
+        row_idx = self.rows_number
+        for i in reversed(range(len(to_pop))):
+            row_idx -= 1
+            self.field_matrix[row_idx][col] = to_pop[i]
 
-            col_values.pop(index)
-            col_cords.pop(index)
-
-        for index, pos in enumerate(col_cords):
-            self.field_matrix[(self.rows_number - 1) - index][pos[1]] = col_values[index]
+        for i in range(row_idx):
+            self.field_matrix[i][col] = 0
 
     # Get connected set of blocks with same value as origin
     def connected_blocks(self, ori_block, seen):
@@ -248,5 +262,23 @@ number_of_rows = 10
 number_of_columns = 5
 score_to_win = 100
 
-game = Logic(number_of_rows, number_of_columns, score_to_win)
+game = Game(number_of_rows, number_of_columns, score_to_win)
 game.game_loop()
+
+''' for testing
+game.field_matrix = [[0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0],
+                     [0, 4, 0, 0, 2],
+                     [3, 0, 4, 4, 0],
+                     [0, 4, 0, 0, 2],
+                     [3, 0, 4, 4, 2],]
+game.display_field_matrix()
+for col in range(number_of_columns):
+    game.update_column(col)
+
+game.display_field_matrix()
+'''
