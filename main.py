@@ -10,11 +10,11 @@ class Game:
 
         self.available_block_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         self.column_names = ['q', 'w', 'e', 'r', 't']
-        self.score = 0
+        self.curr_score = 0
 
         self.logic = Logic(self.rows_number, self.cols_number, self.field_matrix, self.available_block_list,
-                           self.column_names, self.score, self.get_block_value, self.change_block_value)
-        self.ui_manager = UiManager(cols_number, rows_number, self.column_names, self.field_matrix, self.score)
+                           self.column_names, self.get_score, self.get_block_value, self.change_block_value, self.set_score)
+        self.ui_manager = UiManager(cols_number, rows_number, self.column_names, self.field_matrix, self.get_score)
         self.controller = Controller(self.column_names, self.end)
 
     # Start game loop
@@ -48,14 +48,20 @@ class Game:
     def end():
         quit()
 
+    def set_score(self, to_be):
+        self.curr_score = to_be
+
+    def get_score(self):
+        return self.curr_score
+
 
 class UiManager:
-    def __init__(self, cols_num, rows_num, col_names, field_matrix, score):
+    def __init__(self, cols_num, rows_num, col_names, field_matrix, get_score):
         self.cols_number = cols_num
         self.rows_number = rows_num
         self.column_names = col_names
         self.field_matrix = field_matrix
-        self.score = score
+        self.score = get_score
 
         self.next_block = 0
         self.border_num = 2
@@ -112,7 +118,7 @@ class UiManager:
 
     # Display score bar
     def display_score_bar(self):
-        print(f'Score: {self.score}')
+        print(f'Score: {self.score()}')
         print(f'Next piece: {self.next_block}')
 
 
@@ -140,16 +146,17 @@ class Controller:
 
 
 class Logic:
-    def __init__(self, rows_num, cols_num, field_matrix, block_list, col_names, score, get_block_value,
-                 change_block_value):
+    def __init__(self, rows_num, cols_num, field_matrix, block_list, col_names, get_score, get_block_value,
+                 change_block_value, set_score):
         self.rows_number = rows_num
         self.cols_number = cols_num
         self.field_matrix = field_matrix
         self.available_block_list = block_list
         self.column_names = col_names
-        self.score = score
+        self.get_score = get_score()
         self.get_block_value = get_block_value
         self.change_block_value = change_block_value
+        self.set_score = set_score
 
     # Generating new empty playing field
     def gen_empty_field(self):
@@ -165,7 +172,7 @@ class Logic:
 
     # Function for adding to total score
     def add_to_score(self, to_add):
-        self.score += to_add
+        self.set_score(self.get_score + to_add)
 
     # Place a block the lowest possible spot in selected column
     def place_block(self, block, column):
